@@ -88,13 +88,24 @@ class ActiveSupport::TestCase
     assert_template 'common/403'
   end
 
+  def closing_user
+    @closing_user ||= User.generate!.reload
+  end
+  
+  def closing_status
+    @closing_status ||= IssueStatus.generate!(:is_closed => true)
+  end
+  
   def configure_plugin(configuration_change={})
-    Setting.plugin_TODO = {
-      
+    Setting.plugin_chiliproject_auto_close = {
+      'close_user' => closing_user.id.to_s,
+      'closing_status' => closing_status.id.to_s,
+      'warning_note' => "This issue has been dormant for 60 days and will be closed in 30 days.",
+      'closing_note' => "This issue has had no activity for 90 days and is now closed."
     }.merge(configuration_change)
   end
 
   def reconfigure_plugin(configuration_change)
-    Settings['plugin_TODO'] = Setting['plugin_TODO'].merge(configuration_change)
+    Settings['plugin_chiliproject_auto_close'] = Setting['plugin_chiliproject_auto_close'].merge(configuration_change)
   end
 end
