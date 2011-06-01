@@ -40,7 +40,14 @@ class ChiliprojectAutoClose::Patches::IssueTest < ActionController::TestCase
         assert @issue_to_close.closed?
       end
 
-      should "do nothing to issues that are within the close_days"
+      should "do nothing to issues that are within the close_days" do
+        @issue_not_ready_to_close = Issue.generate_for_project!(@project, :updated_on => 29.days.ago)
+        @issue_not_ready_to_close.add_auto_close_warning
+
+        assert_no_difference("@issue_not_ready_to_close.journals.count") do
+          Issue.auto_close
+        end
+      end
     end
 
     context "options" do
