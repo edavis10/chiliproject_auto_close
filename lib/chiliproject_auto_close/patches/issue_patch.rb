@@ -20,6 +20,12 @@ module ChiliprojectAutoClose
                                          options[:close_days].to_i.days.ago]).each do |issue|
             issue.auto_close
           end
+
+          Issue.open.all(:include => :journals,
+                         :conditions => ["#{Issue.table_name}.updated_on < (?) AND #{Journal.table_name}.notes NOT LIKE '%Auto-close-id%'",
+                                         options[:warning_days].to_i.days.ago]).each do |issue|
+            issue.add_auto_close_warning
+          end
           
         end
         

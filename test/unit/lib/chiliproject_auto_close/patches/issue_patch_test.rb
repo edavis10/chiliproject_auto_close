@@ -6,24 +6,55 @@ class ChiliprojectAutoClose::Patches::IssueTest < ActionController::TestCase
     setup do
       configure_plugin
       @project = Project.generate!
-      @issue_to_warn = Issue.generate_for_project!(@project, :updated_on => 45.days.ago)
-      @issue_to_close = Issue.generate_for_project!(@project, :updated_on => 62.days.ago)
-      @issue_to_close.add_auto_close_warning
+      Timecop.travel(60.days.ago) do
+        @issue_to_warn = Issue.generate_for_project!(@project)
+      end
+
+      # 35 days since updated/added the auto close warning
+      Timecop.travel(35.days.ago) do
+        @issue_to_close = Issue.generate_for_project!(@project)
+        @issue_to_close.add_auto_close_warning
+      end
+      
     end
     
     context "issues that haven't been updated within the warning_days" do
       should "add a journal with the auto-close note" do
-        assert_difference("Journal.count", 2) do
+        assert_difference("@issue_to_warn.journals.count") do
+          Issue.auto_close
+        end
+      end
+      
+      should "add note content based on the configured settings" do
+        Issue.auto_close
+
+        @issue_to_warn.reload
+        assert_match /been dormant/, @issue_to_warn.last_journal.notes
+      end
+      
+      should "add note from the configured user" do
+        Issue.auto_close
+
+        @issue_to_warn.reload
+        assert_equal closing_user, @issue_to_warn.last_journal.user
+      end
+
+      should "add the auto-close tracking id to the note" do
+        Issue.auto_close
+
+        @issue_to_warn.reload
+        assert_match /Auto-close-id/, @issue_to_warn.last_journal.notes
+      end
+        
+      should "not add an auto-close note if one exists" do
+        @issue_to_warn.add_auto_close_warning
+        
+        assert_no_difference("@issue_to_warn.journals.count") do
           Issue.auto_close
         end
 
-        assert_equal 1, @issue_to_warn.reload.journals.count
       end
       
-      should "add note content based on the configured settings"
-      should "add note from the configured user"
-      should "add the auto-close tracking id to the note"
-      should "not add an auto-close note if one exists"
     end
 
     context "issues with an auto-close note" do
