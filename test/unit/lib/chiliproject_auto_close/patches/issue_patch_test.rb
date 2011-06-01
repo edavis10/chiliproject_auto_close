@@ -28,9 +28,9 @@ class ChiliprojectAutoClose::Patches::IssueTest < ActionController::TestCase
 
     context "issues with an auto-close note" do
       should "close issues that are past close_days" do
-#        assert_difference("Journal.count", 2) do
-        Issue.auto_close
-  #      end
+        assert_difference("@issue_to_close.journals.count",1) do
+          Issue.auto_close
+        end
         @issue_to_close.reload
 
         assert_equal 3, @issue_to_close.journals.count
