@@ -20,7 +20,6 @@ END_DESC
       :close_days => ENV['close_days']
     }
     
-    puts options.inspect
     Issue.auto_close(options)
   end
 end

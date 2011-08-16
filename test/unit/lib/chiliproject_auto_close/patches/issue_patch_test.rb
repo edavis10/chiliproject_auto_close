@@ -90,10 +90,71 @@ class ChiliprojectAutoClose::Patches::IssueTest < ActionController::TestCase
     end
 
     context "options" do
-      should "allow restricting by status ids"
-      should "allow restricting by status names"
-      should "allow configuring the warning_days"
-      should "allow configuring the close_days"
+      should "allow restricting by status ids" do
+        @status = IssueStatus.generate!
+        Timecop.travel(65.days.ago) do
+          @issue_to_warn_custom_status = Issue.generate_for_project!(@project, :subject => 'warn', :status => @status)
+        end
+
+        assert_no_difference("@issue_to_warn.journals.count") do
+          assert_difference("@issue_to_warn_custom_status.journals.count") do
+            Issue.auto_close(:status => @status.id.to_s)
+          end
+        end
+        
+      end
+      
+      should "allow restricting by status names" do
+        @status = IssueStatus.generate!
+        Timecop.travel(65.days.ago) do
+          @issue_to_warn_custom_status = Issue.generate_for_project!(@project, :subject => 'warn', :status => @status)
+        end
+
+        assert_no_difference("@issue_to_warn.journals.count") do
+          assert_difference("@issue_to_warn_custom_status.journals.count") do
+            Issue.auto_close(:status => @status.name)
+          end
+        end
+        
+      end
+
+      should "allow restricting by a mix of status names and ids, comma separated" do
+        @status = IssueStatus.generate!(:name => 'Status one').reload
+        @status2 = IssueStatus.generate!(:name => 'Status two').reload
+        Timecop.travel(65.days.ago) do
+          @issue_to_warn_custom_status = Issue.generate_for_project!(@project, :subject => 'warn', :status => @status)
+          @issue_to_warn_custom_status2 = Issue.generate_for_project!(@project, :subject => 'warn', :status => @status2)
+        end
+
+        assert_no_difference("@issue_to_warn.journals.count") do
+          assert_difference("@issue_to_warn_custom_status.journals.count") do
+            assert_difference("@issue_to_warn_custom_status2.journals.count") do
+              Issue.auto_close(:status => "#{@status.name} , #{@status2.id}")
+            end
+          end
+        end
+
+      end
+        
+      should "allow configuring the warning_days" do
+        assert_no_difference("@issue_to_warn.journals.count") do
+          Issue.auto_close(:warning_days => 90) # since update
+        end
+        @issue_to_warn.reload
+
+        assert_equal 1, @issue_to_warn.journals.count, "Issue to warn had a journal added"
+      end
+
+      should "allow configuring the close_days" do
+        assert_no_difference("@issue_to_close.journals.count") do
+          Issue.auto_close(:close_days => 90) # since warning
+        end
+        @issue_to_close.reload
+
+        assert !@issue_to_close.closed?, "Issue to closed was closed early"
+        assert_equal 2, @issue_to_close.journals.count, "Issue to close had a journal added"
+      end
+      
     end
     
   end

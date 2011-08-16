@@ -14,16 +14,28 @@ module ChiliprojectAutoClose
         def auto_close(options={})
           options[:warning_days] ||= 60
           options[:close_days] ||= 30
+          if options[:status].present?
+            status_filter = []
+            options[:status].to_s.split(',').each do |status_option|
+              status_option.strip!
+              status = IssueStatus.find_by_name(status_option)
+              # Cast to int to guard against comparing string to int column (PGError)
+              status ||= IssueStatus.find_by_id(status_option.to_i)
+              status_filter << status.id if status.present?
+            end
+          else
+            status_filter = IssueStatus.all.collect(&:id)
+          end
 
           Issue.open.all(:include => :journals,
-                         :conditions => ["#{Issue.table_name}.updated_on < (?) AND #{Journal.table_name}.notes LIKE '%Auto-close-id%'",
-                                         options[:close_days].to_i.days.ago]).each do |issue|
+                         :conditions => ["#{Issue.table_name}.status_id in (?) AND #{Issue.table_name}.updated_on < (?) AND #{Journal.table_name}.notes LIKE '%Auto-close-id%'",
+                                         status_filter, options[:close_days].to_i.days.ago]).each do |issue|
             issue.auto_close
           end
 
           Issue.open.all(:include => :journals,
-                         :conditions => ["#{Issue.table_name}.updated_on < (?) AND #{Journal.table_name}.notes NOT LIKE '%Auto-close-id%'",
-                                         options[:warning_days].to_i.days.ago]).each do |issue|
+                         :conditions => ["#{Issue.table_name}.status_id in (?) AND #{Issue.table_name}.updated_on < (?) AND #{Journal.table_name}.notes NOT LIKE '%Auto-close-id%'",
+                                         status_filter, options[:warning_days].to_i.days.ago]).each do |issue|
             issue.add_auto_close_warning
           end
           
