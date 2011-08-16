@@ -40,15 +40,14 @@ module ChiliprojectAutoClose
 
         def convert_status_to_ids_for_auto_close(status)
           if status.present?
-            status_filter = []
-            status.to_s.split(',').each do |status_option|
+            return status.to_s.split(',').inject([]) do |statuses, status_option|
               status_option.strip!
               status_record = IssueStatus.find_by_name(status_option)
               # Cast to int to guard against comparing string to int column (PGError)
               status_record ||= IssueStatus.find_by_id(status_option.to_i)
-              status_filter << status_record.id if status_record.present?
+              statuses << status_record.id if status_record.present?
+              statuses
             end
-            return status_filter
           else
             return IssueStatus.all.collect(&:id)
           end
