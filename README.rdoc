@@ -4,22 +4,25 @@ Automatically close old issues
 
 == Features
 
-TODO: fill in features
+* Automatically close dormant issues
+* Warn when issues are becoming dormant
+* Scriptable rake task to close and warn issues (usable through cron)
+* Configurable warning and closing messages
 
 == Getting the plugin
 
 A copy of the plugin can be downloaded from {Little Stream Software}[https://projects.littlestreamsoftware.com/projects/chiliproject_auto_close/files] or from {GitHub}[http://github.com/edavis10/chiliproject_auto_close]
 
-
 == Installation and Setup
 
 1. Follow the Redmine plugin installation steps at: http://www.redmine.org/wiki/redmine/Plugins 
-2. Run the plugin migrations +rake db:migrate_plugins+
-3. Restart your Redmine web servers (e.g. mongrel, thin, mod_rails)
+2. Restart your Redmine web servers (e.g. mongrel, thin, mod_rails)
 
 == Usage
 
-TODO: Add usage
+Configure your warning and closing messages in the plugin configuration panel (Admin > Plugins > Configure). These will be the notes that are posted to an issue when it is about to be closed and when it's closed.
+
+Run (or schedule) the "auto_close:close" rake task to check every issue if it needs to be closed. You can pass in options to control the number of days before a warning or closure as well as limit the issue statuses affected. Run "rake -D auto_close:close" for the full documentation, default options, and more examples.
 
 == License
 

@@ -1,12 +1,12 @@
 require 'redmine'
 
 Redmine::Plugin.register :chiliproject_auto_close do
-  name 'Chiliproject Auto Close plugin'
-  author 'Author name'
-  description 'This is a plugin for ChiliProject'
-  version '0.0.1'
-  url 'http://example.com/path/to/plugin'
-  author_url 'http://example.com/about'
+  name 'Auto Close'
+  author 'Eric Davis'
+  url 'https://projects.littlestreamsoftware.com/projects/chiliproject_auto_close'
+  author_url 'http://www.littlestreamsoftware.com'
+  description 'Automatically close old issues'
+  version '0.1.0'
 
   settings(:partial => 'settings/auto_close',
            :default => {
