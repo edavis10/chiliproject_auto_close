@@ -6,15 +6,19 @@ class ChiliprojectAutoClose::Patches::IssueTest < ActionController::TestCase
     setup do
       configure_plugin
       @project = Project.generate!
-      Timecop.travel(60.days.ago) do
-        @issue_to_warn = Issue.generate_for_project!(@project)
+      Timecop.travel(65.days.ago) do
+        @issue_to_warn = Issue.generate_for_project!(@project, :subject => 'warn')
+        @issue_to_warn.reload
+        assert_equal 1, @issue_to_warn.journals.count
       end
 
       # 35 days since updated/added the auto close warning
       Timecop.travel(35.days.ago) do
-        @issue_to_close = Issue.generate_for_project!(@project)
+        @issue_to_close = Issue.generate_for_project!(@project, :subject => 'close')
         @issue_to_close.add_auto_close_warning
+        assert_equal 2, @issue_to_close.journals.count
       end
+      Setting.clear_cache
       
     end
     
@@ -29,21 +33,25 @@ class ChiliprojectAutoClose::Patches::IssueTest < ActionController::TestCase
         Issue.auto_close
 
         @issue_to_warn.reload
-        assert_match /been dormant/, @issue_to_warn.last_journal.notes
+        assert_equal 2, @issue_to_warn.journals.count
+        assert_match /been dormant/, @issue_to_warn.journals.last.notes
       end
       
       should "add note from the configured user" do
         Issue.auto_close
 
         @issue_to_warn.reload
-        assert_equal closing_user, @issue_to_warn.last_journal.user
+        assert_equal 2, @issue_to_warn.journals.count
+        assert_equal closing_user, @issue_to_warn.journals.last.user
       end
 
       should "add the auto-close tracking id to the note" do
         Issue.auto_close
 
         @issue_to_warn.reload
-        assert_match /Auto-close-id/, @issue_to_warn.last_journal.notes
+        assert_equal 2, @issue_to_warn.journals.count
+        
+        assert_match /Auto-close-id/, @issue_to_warn.journals.last.notes
       end
         
       should "not add an auto-close note if one exists" do

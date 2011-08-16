@@ -42,8 +42,8 @@ module ChiliprojectAutoClose
           message = Setting.plugin_chiliproject_auto_close['warning_note']
           message = "Auto closing issue warning" unless message.present?
           message << "\n\nAuto-close-id: #{Time.now.to_i}"
-          init_journal(closing_user, message)
-
+          self.journal_notes = message
+          self.journal_user = closing_user
           save
                        
         end
@@ -58,9 +58,9 @@ module ChiliprojectAutoClose
           message = Setting.plugin_chiliproject_auto_close['closing_note']
           message = "Auto closing issue" unless message.present?
           message << "\n\nAuto-close-id: #{Time.now.to_i}"
-          init_journal(closing_user, message)
+          self.journal_notes = message
+          self.journal_user = closing_user
           self.status_id = Setting.plugin_chiliproject_auto_close['closing_status'] || IssueStatus.first(:conditions => {:is_closed => true})
-
           save
         end
         
