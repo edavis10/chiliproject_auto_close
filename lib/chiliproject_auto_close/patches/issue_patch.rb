@@ -12,6 +12,26 @@ module ChiliprojectAutoClose
 
       module ClassMethods
         def auto_close(options={})
+          options = parse_auto_close_options(options)
+
+          Issue.open.all(:include => :journals,
+                         :conditions => ["#{Issue.table_name}.status_id in (?) AND #{Issue.table_name}.updated_on < (?) AND #{Journal.table_name}.notes LIKE '%Auto-close-id%'",
+                                         options[:status], options[:close_days].to_i.days.ago]).each do |issue|
+            issue.auto_close
+          end
+
+          Issue.open.all(:include => :journals,
+                         :conditions => ["#{Issue.table_name}.status_id in (?) AND #{Issue.table_name}.updated_on < (?) AND #{Journal.table_name}.notes NOT LIKE '%Auto-close-id%'",
+                                         options[:status], options[:warning_days].to_i.days.ago]).each do |issue|
+            issue.add_auto_close_warning
+          end
+          
+        end
+
+        private
+
+        # Parse and standarize the options passed to auto_close
+        def parse_auto_close_options(options)
           options[:warning_days] ||= 60
           options[:close_days] ||= 30
           if options[:status].present?
@@ -23,24 +43,13 @@ module ChiliprojectAutoClose
               status ||= IssueStatus.find_by_id(status_option.to_i)
               status_filter << status.id if status.present?
             end
+            options[:status] = status_filter
           else
-            status_filter = IssueStatus.all.collect(&:id)
+            options[:status] = IssueStatus.all.collect(&:id)
           end
 
-          Issue.open.all(:include => :journals,
-                         :conditions => ["#{Issue.table_name}.status_id in (?) AND #{Issue.table_name}.updated_on < (?) AND #{Journal.table_name}.notes LIKE '%Auto-close-id%'",
-                                         status_filter, options[:close_days].to_i.days.ago]).each do |issue|
-            issue.auto_close
-          end
-
-          Issue.open.all(:include => :journals,
-                         :conditions => ["#{Issue.table_name}.status_id in (?) AND #{Issue.table_name}.updated_on < (?) AND #{Journal.table_name}.notes NOT LIKE '%Auto-close-id%'",
-                                         status_filter, options[:warning_days].to_i.days.ago]).each do |issue|
-            issue.add_auto_close_warning
-          end
-          
+          options
         end
-        
       end
 
       module InstanceMethods
