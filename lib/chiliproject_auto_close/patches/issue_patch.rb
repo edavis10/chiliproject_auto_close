@@ -34,21 +34,24 @@ module ChiliprojectAutoClose
         def parse_auto_close_options(options)
           options[:warning_days] ||= 60
           options[:close_days] ||= 30
-          if options[:status].present?
-            status_filter = []
-            options[:status].to_s.split(',').each do |status_option|
-              status_option.strip!
-              status = IssueStatus.find_by_name(status_option)
-              # Cast to int to guard against comparing string to int column (PGError)
-              status ||= IssueStatus.find_by_id(status_option.to_i)
-              status_filter << status.id if status.present?
-            end
-            options[:status] = status_filter
-          else
-            options[:status] = IssueStatus.all.collect(&:id)
-          end
-
+          options[:status] = convert_status_to_ids_for_auto_close(options[:status])
           options
+        end
+
+        def convert_status_to_ids_for_auto_close(status)
+          if status.present?
+            status_filter = []
+            status.to_s.split(',').each do |status_option|
+              status_option.strip!
+              status_record = IssueStatus.find_by_name(status_option)
+              # Cast to int to guard against comparing string to int column (PGError)
+              status_record ||= IssueStatus.find_by_id(status_option.to_i)
+              status_filter << status_record.id if status_record.present?
+            end
+            return status_filter
+          else
+            return IssueStatus.all.collect(&:id)
+          end
         end
       end
 
